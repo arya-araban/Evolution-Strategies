@@ -1,18 +1,17 @@
 import numpy as np
 from numpy.random import randn, rand, seed
+import random
 
 
-def es_comma(objective, bounds, n_iter, step_size, n_selected_parents, population_size):
+def es_comma(objective, bounds, n_iter, step_size, n_selected_parents, population_size, n_parent_size):
     best, best_eval = None, 1e+10
     # calculate the number of children per parent
     n_children = int(population_size / n_selected_parents)
     # initial population
     population = list()
     for _ in range(population_size):
-        candidate = None
-        while candidate is None or not _in_bounds(candidate, bounds):
-            candidate = bounds[:, 0] + rand(len(bounds)) * (bounds[:, 1] - bounds[:, 0])
-        population.append(candidate)
+        population.append([random.uniform(bounds[0], bounds[1]) for _ in range(n_parent_size)])
+
     # perform the search
     for epoch in range(n_iter):
         # evaluate fitness for the population
@@ -27,29 +26,26 @@ def es_comma(objective, bounds, n_iter, step_size, n_selected_parents, populatio
             # check if this parent is the best solution ever seen
             if scores[i] < best_eval:
                 best, best_eval = population[i], scores[i]  # we just use this info and print it
-                print('%d, Best: f(%s) = %.5f' % (epoch, best, best_eval))
+                print(f'{epoch}, Best: f({best}) = {best_eval:.5f}')
             # create children for parent
             for _ in range(n_children):
                 child = None
                 while child is None or not _in_bounds(child, bounds):
-                    child = population[i] + randn(len(bounds)) * step_size
+                    child = population[i] + randn(n_parent_size) * step_size
                 children.append(child)
         # replace population with children
         population = children
     return [best, best_eval]
 
 
-def es_plus(objective, bounds, n_iter, step_size, mu, lam):
+def es_plus(objective, bounds, n_iter, step_size, n_selected_parents, population_size, n_parent_size):
     best, best_eval = None, 1e+10
     # calculate the number of children per parent
-    n_children = int(lam / mu)
+    n_children = int(population_size / n_selected_parents)
     # initial population
     population = list()
-    for _ in range(lam):
-        candidate = None
-        while candidate is None or not _in_bounds(candidate, bounds):
-            candidate = bounds[:, 0] + rand(len(bounds)) * (bounds[:, 1] - bounds[:, 0])
-        population.append(candidate)
+    for _ in range(population_size):
+        population.append([random.uniform(bounds[0], bounds[1]) for _ in range(n_parent_size)])
     # perform the search
     for epoch in range(n_iter):
         # evaluate fitness for the population
@@ -57,32 +53,30 @@ def es_plus(objective, bounds, n_iter, step_size, mu, lam):
         # rank scores in ascending order
         ranks = np.argsort(np.argsort(scores))
         # select the indexes for the top mu ranked solutions
-        selected = [i for i, _ in enumerate(ranks) if ranks[i] < mu]
+        selected_indexes = [i for i, _ in enumerate(ranks) if ranks[i] < n_selected_parents]
         # create children from parents
         children = list()
-        for i in selected:
+        for i in selected_indexes:
             # check if this parent is the best solution ever seen
             if scores[i] < best_eval:
                 best, best_eval = population[i], scores[i]
-                print('%d, Best: f(%s) = %.5f' % (epoch, best, best_eval))
+                print(f'{epoch}, Best: f({best}) = {best_eval:.5f}')
             # keep the parent
-            children.append(population[i])
+            children.append(population[i])  # parent is also a part of the children so that scoring happens!
             # create children for parent
             for _ in range(n_children):
                 child = None
                 while child is None or not _in_bounds(child, bounds):
-                    child = population[i] + randn(len(bounds)) * step_size
+                    child = population[i] + randn(n_parent_size) * step_size
                 children.append(child)
         # replace population with children
         population = children
     return [best, best_eval]
 
 
-# check if a point is within the bounds of the search
 def _in_bounds(point, bounds):
     # enumerate all dimensions of the point
-    for d in range(len(bounds)):
-        # check if out of bounds for this dimension
-        if point[d] < bounds[d, 0] or point[d] > bounds[d, 1]:
+    for xi in point:
+        if xi < bounds[0] or xi > bounds[1]:
             return False
     return True
