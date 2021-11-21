@@ -1,5 +1,5 @@
 import random
-from lib.es import es_comma, es_plus
+from lib.es import es_comma, es_plus, es_classic
 from lib.plot import plot_func
 import numpy as np
 
@@ -12,15 +12,33 @@ def rosenbrock(v):
     total = 0
     for i in range(len(v) - 1):
         xi = v[i]
-        xnext = v[i + 1]
-        new = 100 * (xnext - xi ** 2) ** 2 + (xi - 1) ** 2
+        x_next = v[i + 1]
+        new = 100 * (x_next - xi ** 2) ** 2 + (xi - 1) ** 2
         total = total + new
     return total
 
 
-def main(bounds, type='comma'):
-    # seed the pseudorandom number generator
-    # random.seed(101)
+def main():
+    """ THE MAIN FUNCTION USED FOR CLASSIC ES """
+
+    # define the random seed
+    random.seed(103)
+    # define the maximum step size
+    sigma = 0.06
+
+    # define the parent vector size
+    n = 20
+
+    best_score, success_rate = es_classic(rosenbrock, bounds=[-30, 30], n_iter=10000, step_size=sigma, n_parent_size=n)
+    print('\n ---- \n')
+    print(f"best_score: {best_score:.2f} --- success_rate: {success_rate}")
+
+
+def main2(type='plus'):
+    """ THE MAIN FUNCTION USED FOR ES COMMA OR ES PLUS  """
+
+    # define the bounds
+    bounds = [-30, 30]
     # define the total iterations
     n_iter = 10000
     # number of parents selected
@@ -32,19 +50,16 @@ def main(bounds, type='comma'):
     sigma = 0.15
 
     # define the parent vector size
-    n = 10
+    n = 2
 
     # perform the evolution strategy (mu, lambda) search
-    if (type == 'comma'):
+    if type == 'comma':
         best, score = es_comma(rosenbrock, bounds, n_iter, step_size=sigma, n_selected_parents=mu, population_size=lam,
                                n_parent_size=n)
-    else:
+    elif type == 'plus':
         best, score = es_plus(rosenbrock, bounds, n_iter, step_size=sigma, n_selected_parents=mu, population_size=lam,
                               n_parent_size=n)
-    print('Done!')
-    print('f(%s) = %f' % (best, score))
 
 
 if __name__ == '__main__':
-    # plot_func(objective, bound_range)
-    main(bounds=[-30, 30], type='plus')
+    main()
